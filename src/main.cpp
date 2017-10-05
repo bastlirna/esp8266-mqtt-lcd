@@ -8,7 +8,10 @@
 #include "keywords.h"
 
 #define BACKLIGHT_PIN 5
+
+#ifndef JSON_BUFFER_SIZE
 #define JSON_BUFFER_SIZE 2048
+#endif
 
 U8G2_ST7565_64128N_F_4W_HW_SPI u8g2(U8G2_R0, 4, 2 , 15);
 static LcdClass lcd(u8g2, BACKLIGHT_PIN);
@@ -20,19 +23,22 @@ bool globalInputHandler(const HomieNode& node, const String& property, const Hom
     return true;
   }
 */
+
 bool contentHandler(const HomieRange& range, const String& value) {
   StaticJsonBuffer<JSON_BUFFER_SIZE> inputJsonBuffer;
   DynamicJsonBuffer outputJsonBuffer;
-
+  
   JsonObject& input = inputJsonBuffer.parseObject(value);
   JsonObject& output = outputJsonBuffer.createObject();
 
   if (input.success()) {
+    uint32_t stime = millis();
     if(lcd.display(input, output)){
       output[KEYWORD_STATUS] = KEYWORD_STATUS_OK;
     }else{
       output[KEYWORD_STATUS] = KEYWORD_STATUS_FAILED;
     }
+    output[KEYWORD_TIME] = millis() - stime;
   }else{
     Homie.getLogger() << "parseObject() failed: " << value << endl;
     output[KEYWORD_STATUS] = KEYWORD_STATUS_FAILED;
